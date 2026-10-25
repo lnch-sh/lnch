@@ -5,10 +5,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 
 	"lnch.sh/internal/proc"
@@ -131,12 +133,71 @@ func write(path string, v any) error {
 		return err
 	}
 	b = append(b, '\n')
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, b, 0o600); err != nil {
+	f, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".tmp-*")
+	if err != nil {
 		return err
 	}
-	_ = os.Remove(path)
-	return os.Rename(tmp, path)
+	tmp := f.Name()
+	_, werr := f.Write(b)
+	cerr := f.Close()
+	if werr != nil || cerr != nil {
+		_ = os.Remove(tmp)
+		if werr != nil {
+			return werr
+		}
+		return cerr
+	}
+	if err := replace(tmp, path); err != nil {
+		_ = os.Remove(tmp)
+		return err
+	}
+	return nil
+}
+
+// replace moves tmp onto path. Windows denies the replace while a reader
+// still has path open, so a short retry covers that instead of deleting
+// the live file first.
+func replace(tmp, path string) error {
+	var err error
+	for i := 0; i < 20; i++ {
+		err = os.Rename(tmp, path)
+		if err == nil || !transient(err) {
+			return err
+		}
+		time.Sleep(time.Duration(i+1) * 5 * time.Millisecond)
+	}
+	return err
+}
+
+func readFile(path string) ([]byte, error) {
+	var b []byte
+	var err error
+	for i := 0; i < 20; i++ {
+		b, err = os.ReadFile(path)
+		if err == nil || !transient(err) {
+			return b, err
+		}
+		time.Sleep(time.Duration(i+1) * 5 * time.Millisecond)
+	}
+	return nil, err
+}
+
+// transient is a Windows sharing or access error from a file that is
+// mid-replace. Other systems rename and read without that collision.
+func transient(err error) bool {
+	if runtime.GOOS != "windows" || err == nil {
+		return false
+	}
+	var errno syscall.Errno
+	if !errors.As(err, &errno) {
+		return false
+	}
+	switch errno {
+	case 5, 32, 33: // ERROR_ACCESS_DENIED, ERROR_SHARING_VIOLATION, ERROR_LOCK_VIOLATION
+		return true
+	default:
+		return false
+	}
 }
 
 // SavePlan writes a detached launch plan.
@@ -157,7 +218,7 @@ func Load(root string) (Runtime, error) {
 	if err != nil {
 		return Runtime{}, err
 	}
-	b, err := os.ReadFile(path)
+	b, err := readFile(path)
 	if err != nil {
 		return Runtime{}, err
 	}
@@ -170,7 +231,7 @@ func Load(root string) (Runtime, error) {
 
 // LoadPlan reads a JSON plan file.
 func LoadPlan(path string, dest any) error {
-	b, err := os.ReadFile(path)
+	b, err := readFile(path)
 	if err != nil {
 		return err
 	}
