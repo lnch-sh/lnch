@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>lnch — Launch any dev stack in one command</title>
+    <meta
+      name="description"
+      content="lnch detects a project, starts its dev servers, and can share them on a LAN or public URL."
+    />
+    <meta name="theme-color" content="#070907" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body class="min-h-dvh bg-void font-mono text-[15px] leading-relaxed text-fg antialiased">
+    <div class="mx-auto flex min-h-dvh max-w-3xl flex-col px-3 py-4 sm:px-6 sm:py-8">
+      <div class="flex flex-1 flex-col border border-line bg-panel">
+        <header class="flex items-center justify-between gap-4 border-b border-line px-3 py-2 text-xs">
+          <a href="/" class="text-fg no-underline">lnch.sh</a>
+          <nav class="flex gap-4" aria-label="Site">
+            <a class="text-green no-underline" href="/" aria-current="page">home</a>
+            <a class="text-dim no-underline hover:text-green" href="/docs/">docs</a>
+          </nav>
+        </header>
+
+        <main class="flex-1 px-4 py-8 sm:px-8 sm:py-12">
+          <h1 class="text-[clamp(3.5rem,14vw,6rem)] leading-none tracking-tight text-green">
+            lnch<span class="caret" aria-hidden="true"></span>
+          </h1>
+          <p class="mt-5 max-w-md text-lg">Launch any dev stack in one command.</p>
+
+          <pre class="boot mt-10 overflow-x-auto text-[13px] leading-7" aria-label="Example session"><span class="row"><span class="text-green">$</span> lnch</span>
+<span class="row">web   <span class="text-green">healthy</span>   https://localhost:5173</span>
+<span class="row">api   <span class="text-green">healthy</span>   https://localhost:8080</span>
+<span class="row"><span class="text-yellow">share</span> https://a7k2m9qx.lnch.sh/</span></pre>
+
+          <section class="mt-12" aria-labelledby="install-title">
+            <h2 id="install-title" class="text-sm text-dim">Install</h2>
+            <pre class="mt-3 overflow-x-auto text-[13px] leading-7">git clone https://github.com/lnch-sh/lnch
+cd lnch
+go install ./cmd/lnch</pre>
+            <button
+              class="mt-3 text-xs text-cyan hover:text-green"
+              type="button"
+              data-copy="git clone https://github.com/lnch-sh/lnch&#10;cd lnch&#10;go install ./cmd/lnch"
+            >
+              copy
+            </button>
+            <p class="mt-4 text-sm text-dim">
+              Go 1.23 or newer, from a checkout of the repo.
+              <a class="text-cyan" href="/install.sh">install.sh</a>
+              is the release installer, once a release exists.
+            </p>
+          </section>
+
+          <p class="mt-12 text-sm text-dim">
+            <a class="text-cyan no-underline hover:text-green" href="/docs/">Read the docs</a>
+            <span class="mx-2 text-line">/</span>
+            detect, launch, share, local HTTPS, and the agent tools.
+          </p>
+        </main>
+
+        <footer class="flex flex-wrap items-center justify-between gap-3 border-t border-line px-3 py-2 text-xs text-dim">
+          <span>0.1.0 · MIT</span>
+          <a class="text-cyan no-underline hover:text-green" href="https://github.com/lnch-sh/lnch">github</a>
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>

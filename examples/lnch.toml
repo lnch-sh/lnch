@@ -1,0 +1,37 @@
+# Sample stack. When lnch.toml exists, lnch launches this file and skips detection.
+name = "shop"
+
+[https]
+enabled = true
+
+[share]
+service = "web"
+
+[[services]]
+name = "db"
+command = "docker compose up postgres"
+cwd = "."
+protocol = "tcp"
+port = 5432
+health = "tcp://127.0.0.1:${port}"
+
+[[services]]
+name = "api"
+command = "go run ./cmd/api"
+cwd = "api"
+port = 8080
+depends_on = ["db"]
+protocol = "http"
+health = "http://127.0.0.1:${port}/health"
+restart = "on-failure"
+env.DATABASE_URL = "postgres://127.0.0.1:${db.port}/shop?sslmode=disable"
+
+[[services]]
+name = "web"
+command = "pnpm run dev -- --port ${port} --strictPort"
+cwd = "web"
+port = 5173
+depends_on = ["api"]
+protocol = "http"
+primary = true
+public = true

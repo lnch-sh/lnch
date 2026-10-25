@@ -1,0 +1,66 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+          - goos: windows
+            goarch: arm64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+      - name: Build archive
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          set -eu
+          version="${GITHUB_REF_NAME#v}"
+          mkdir -p dist
+          ldflags="-s -w -X lnch.sh/internal/version.Version=${version}"
+          if [ "$GOOS" = "windows" ]; then
+            go build -ldflags "$ldflags" -o dist/lnch.exe ./cmd/lnch
+            (cd dist && zip "../lnch_windows_${GOARCH}.zip" lnch.exe)
+          else
+            go build -ldflags "$ldflags" -o dist/lnch ./cmd/lnch
+            tar -C dist -czf "lnch_${GOOS}_${GOARCH}.tar.gz" lnch
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lnch-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: lnch_*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*

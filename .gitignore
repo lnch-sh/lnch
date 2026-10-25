@@ -1,0 +1,11 @@
+/bin/
+/dist/
+/lnch
+/lnch.exe
+*.exe
+.lnch/
+web/node_modules/
+web/dist/
+web/.wrangler/
+web/.dev.vars
+web/worker-configuration.d.ts

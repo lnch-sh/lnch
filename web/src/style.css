@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+@theme {
+  --font-mono: "IBM Plex Mono", "Cascadia Mono", "Segoe UI Mono", ui-monospace, monospace;
+  --color-void: #070907;
+  --color-panel: #0c100c;
+  --color-line: #243024;
+  --color-fg: #d5e0d2;
+  --color-dim: #8d9a8a;
+  --color-green: #5af78e;
+  --color-yellow: #f4f99d;
+  --color-cyan: #9aedfe;
+  --color-red: #ff6e67;
+  --color-blue: #57c7ff;
+  --color-magenta: #ff92df;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-void);
+  color: var(--color-fg);
+}
+
+::selection {
+  background: #5af78e;
+  color: #070907;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 3px;
+}
+
+.caret {
+  display: inline-block;
+  width: 0.62ch;
+  height: 1.05em;
+  margin-left: 1px;
+  background: var(--color-green);
+  transform: translateY(2px);
+}
+
+pre {
+  white-space: pre-wrap;
+}
+
+.doc-section {
+  margin-top: 2.75rem;
+  scroll-margin-top: 1.5rem;
+}
+
+.doc-section h2 {
+  font-size: 1.15rem;
+  color: var(--color-green);
+}
+
+.doc-section p {
+  margin-top: 0.85rem;
+  color: var(--color-dim);
+}
+
+.doc-section pre {
+  margin-top: 0.85rem;
+  overflow-x: auto;
+  border: 1px solid var(--color-line);
+  background: var(--color-void);
+  padding: 0.75rem 0.9rem;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-fg);
+}
+
+.doc-section dl {
+  margin-top: 0.85rem;
+}
+
+.doc-section dl > div {
+  display: grid;
+  gap: 0.15rem;
+  border-top: 1px solid var(--color-line);
+  padding: 0.7rem 0;
+}
+
+.doc-section dt {
+  color: var(--color-green);
+}
+
+.doc-section dd {
+  color: var(--color-dim);
+}
+
+@media (min-width: 640px) {
+  .doc-section dl > div {
+    grid-template-columns: 9.5rem minmax(0, 1fr);
+    gap: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .caret {
+    animation: blink 1.05s steps(1) infinite;
+  }
+
+  .boot .row {
+    opacity: 0;
+    animation: appear 0.35s ease forwards;
+  }
+
+  .boot .row:nth-child(1) { animation-delay: 0.08s; }
+  .boot .row:nth-child(2) { animation-delay: 0.28s; }
+  .boot .row:nth-child(3) { animation-delay: 0.48s; }
+  .boot .row:nth-child(4) { animation-delay: 0.68s; }
+  .boot .row:nth-child(5) { animation-delay: 0.88s; }
+  .boot .row:nth-child(6) { animation-delay: 1.08s; }
+  .boot .row:nth-child(7) { animation-delay: 1.28s; }
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+@keyframes appear {
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}

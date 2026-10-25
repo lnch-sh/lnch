@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Docs — lnch</title>
+    <meta
+      name="description"
+      content="How lnch detects a project, starts its dev servers, shares a URL, and talks to coding agents."
+    />
+    <meta name="theme-color" content="#070907" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body class="min-h-dvh bg-void font-mono text-[15px] leading-relaxed text-fg antialiased">
+    <div class="mx-auto min-h-dvh max-w-5xl px-3 py-4 sm:px-6 sm:py-8">
+      <div class="flex min-h-[calc(100dvh-2rem)] flex-col border border-line bg-panel">
+        <header class="flex items-center justify-between gap-4 border-b border-line px-3 py-2 text-xs">
+          <a href="/" class="text-fg no-underline">lnch.sh</a>
+          <nav class="flex gap-4" aria-label="Site">
+            <a class="text-dim no-underline hover:text-green" href="/">home</a>
+            <a class="text-green no-underline" href="/docs/" aria-current="page">docs</a>
+          </nav>
+        </header>
+
+        <div class="grid flex-1 gap-8 px-4 py-8 sm:px-8 md:grid-cols-[11rem_minmax(0,1fr)] md:gap-12">
+          <nav class="text-sm md:sticky md:top-6 md:self-start" aria-label="On this page">
+            <ol class="flex flex-wrap gap-x-4 gap-y-2 md:block md:space-y-2">
+              <li><a class="text-dim no-underline hover:text-green" href="#what">What it is</a></li>
+              <li><a class="text-dim no-underline hover:text-green" href="#install">Install</a></li>
+              <li><a class="text-dim no-underline hover:text-green" href="#launch">Launch</a></li>
+              <li><a class="text-dim no-underline hover:text-green" href="#detect">Detect</a></li>
+              <li><a class="text-dim no-underline hover:text-green" href="#share">Share</a></li>
+              <li><a class="text-dim no-underline hover:text-green" href="#https">HTTPS</a></li>
+              <li><a class="text-dim no-underline hover:text-green" href="#dashboard">Dashboard</a></li>
+              <li><a class="text-dim no-underline hover:text-green" href="#config">Config</a></li>
+              <li><a class="text-dim no-underline hover:text-green" href="#commands">Commands</a></li>
+              <li><a class="text-dim no-underline hover:text-green" href="#agents">Agents</a></li>
+            </ol>
+          </nav>
+
+          <main class="min-w-0 max-w-2xl">
+            <p class="text-xs text-dim">docs</p>
+            <h1 class="mt-2 text-3xl text-green">How lnch works</h1>
+            <p class="mt-4 text-dim">
+              lnch is a single Go binary. It finds the dev commands in a project, starts them in order, and can print a public link on lnch.sh.
+            </p>
+
+            <section id="what" class="doc-section">
+              <h2>What it is</h2>
+              <p>
+                One command sits between <span class="text-fg">npm run dev</span> and a full docker-compose or Tilt setup.
+                The homepage at <a href="/">lnch.sh</a> is the short version. This page is the rest.
+              </p>
+              <p>
+                <span class="text-fg">lnch share</span> registers a tunnel with <span class="text-fg">https://lnch.sh</span> and prints <span class="text-fg">https://&lt;id&gt;.lnch.sh</span>.
+                The same tunnel also answers at <span class="text-fg">https://lnch.sh/t/&lt;id&gt;/</span>.
+              </p>
+            </section>
+
+            <section id="install" class="doc-section">
+              <h2>Install</h2>
+              <p>From a checkout, with Go 1.23 or newer:</p>
+              <pre>git clone https://github.com/lnch-sh/lnch
+cd lnch
+go install ./cmd/lnch</pre>
+              <p>
+                <a href="/install.sh">install.sh</a> and <a href="/install.ps1">install.ps1</a> download a GitHub release of <span class="text-fg">lnch-sh/lnch</span>.
+                If no release exists, they print the source install and exit.
+              </p>
+              <pre>curl -fsSL https://lnch.sh/install.sh | sh</pre>
+            </section>
+
+            <section id="launch" class="doc-section">
+              <h2>Launch</h2>
+              <pre>cd my-app
+lnch detect
+lnch
+lnch down</pre>
+              <p>
+                <span class="text-fg">lnch</span> with no arguments is <span class="text-fg">lnch up</span>.
+                In a terminal it opens the dashboard. <span class="text-fg">q</span> quits and stops the stack.
+              </p>
+              <p>
+                <span class="text-fg">lnch up --detach</span> leaves it running.
+                <span class="text-fg">lnch status</span> prints one snapshot and exits.
+                <span class="text-fg">lnch status --watch</span> opens the dashboard without taking ownership of shutdown.
+                <span class="text-fg">lnch down</span> is safe to repeat: a stopped project exits 0.
+              </p>
+              <p>A second <span class="text-fg">lnch up</span> attaches to a stack that is already answering, instead of starting another copy.</p>
+            </section>
+
+            <section id="detect" class="doc-section">
+              <h2>Detect</h2>
+              <p>The first match that claims the project wins. After that, lnch does not also start everything else it can see.</p>
+              <dl>
+                <div><dt>lnch.toml</dt><dd>That file. Detection stops.</dd></div>
+                <div><dt>Procfile</dt><dd>Each entry. <span class="text-fg">Procfile.dev</span> counts. Detection stops.</dd></div>
+                <div><dt>package.json</dt><dd><span class="text-fg">dev</span>, then <span class="text-fg">start</span>, then <span class="text-fg">serve</span>. The lockfile picks pnpm, yarn, bun, or npm.</dd></div>
+                <div><dt>go.mod</dt><dd><span class="text-fg">go run ./cmd/&lt;name&gt;</span> for each main, otherwise <span class="text-fg">go run .</span>.</dd></div>
+                <div><dt>Cargo.toml</dt><dd><span class="text-fg">cargo run</span> for packages with a binary.</dd></div>
+                <div><dt>Python</dt><dd>Django <span class="text-fg">runserver</span>, uvicorn, or <span class="text-fg">flask run</span>.</dd></div>
+                <div><dt>Compose</dt><dd><span class="text-fg">docker compose up</span> when the file has a <span class="text-fg">services:</span> key.</dd></div>
+                <div><dt>Make or just</dt><dd><span class="text-fg">dev</span>, then <span class="text-fg">start</span>, and only when nothing else matched.</dd></div>
+              </dl>
+              <p>
+                A root script that only runs <span class="text-fg">turbo</span>, <span class="text-fg">nx</span>, <span class="text-fg">lerna</span>, or a recursive package manager does not also start nested <span class="text-fg">package.json</span> scripts.
+                Other languages in the tree are still detected.
+              </p>
+              <p><span class="text-fg">lnch init</span> writes <span class="text-fg">lnch.toml</span> from that detection. <span class="text-fg">--stdout</span> prints it. <span class="text-fg">--force</span> overwrites.</p>
+            </section>
+
+            <section id="share" class="doc-section">
+              <h2>Share</h2>
+              <pre>lnch share</pre>
+              <p>
+                Prints <span class="text-fg">https://&lt;id&gt;.lnch.sh</span> and, in a terminal, a QR code.
+                <span class="text-fg">https://lnch.sh/t/&lt;id&gt;/</span> is the same tunnel.
+                The CLI registers that name with the relay on <span class="text-fg">https://lnch.sh</span>, then long-polls it and forwards each request to the local server.
+                A tunnel with no poll for three minutes is dropped.
+              </p>
+              <p>
+                <span class="text-fg">--relay off</span> stays on the LAN, for example <span class="text-fg">http://192.168.1.20:43112/</span>.
+                Phones on the public URL use HTTP. They do not trust the local HTTPS certificate.
+                WebSocket upgrades, including Vite hot reload, stay on the local URL.
+              </p>
+              <pre>lnch relay --addr 127.0.0.1:9090
+lnch share --relay http://127.0.0.1:9090</pre>
+              <p>
+                That uses a relay you run. Its URL looks like <span class="text-fg">http://127.0.0.1:9090/t/abc123/</span>.
+                On a host that receives <span class="text-fg">*.example.com</span>:
+              </p>
+              <pre>lnch relay --addr :8080 --domain example.com --scheme https</pre>
+              <p>
+                Relay choice is <span class="text-fg">--relay</span>, then <span class="text-fg">share.relay</span> in <span class="text-fg">lnch.toml</span>, then <span class="text-fg">LNCH_RELAY</span>, then <span class="text-fg">https://lnch.sh</span>.
+                <span class="text-fg">off</span> disables it.
+                If the relay is unreachable within five seconds, the LAN URL stays and the error is printed.
+                <span class="text-fg">LNCH_RELAY_TOKEN</span> must match a self-hosted relay’s <span class="text-fg">--register-token</span>. The hosted relay does not require one.
+              </p>
+              <p>Anyone with the link can reach the dev server.</p>
+            </section>
+
+            <section id="https" class="doc-section">
+              <h2>Local HTTPS</h2>
+              <p>
+                HTTP services get an <span class="text-fg">https://localhost</span> proxy signed by a CA in <span class="text-fg">~/.lnch</span>.
+              </p>
+              <pre>lnch trust</pre>
+              <p>
+                Windows adds the CA to the current user’s root store. macOS adds it to the login keychain. Linux prints the <span class="text-fg">update-ca-certificates</span> steps.
+                Restart the browser afterward. <span class="text-fg">--no-https</span> skips the proxies. TCP services, including Compose, are left alone.
+              </p>
+            </section>
+
+            <section id="dashboard" class="doc-section">
+              <h2>Dashboard</h2>
+              <p><span class="text-fg">lnch up</span> in a terminal, and <span class="text-fg">lnch status --watch</span>, use the same screen.</p>
+              <dl>
+                <div><dt>j / k</dt><dd>Select a service.</dd></div>
+                <div><dt>r</dt><dd>Restart it.</dd></div>
+                <div><dt>s</dt><dd>Share.</dd></div>
+                <div><dt>o, Enter</dt><dd>Open the selected URL.</dd></div>
+                <div><dt>g</dt><dd>Toggle the QR code.</dd></div>
+                <div><dt>/</dt><dd>Filter logs.</dd></div>
+                <div><dt>q</dt><dd>Quit. From <span class="text-fg">lnch up</span>, this also stops the stack.</dd></div>
+                <div><dt>X</dt><dd>Stop the stack from <span class="text-fg">lnch status --watch</span>.</dd></div>
+              </dl>
+              <p>
+                <span class="text-fg">NO_COLOR</span> or <span class="text-fg">TERM=dumb</span> skips the QR.
+                <span class="text-fg">--no-tui</span> streams prefixed logs.
+                <span class="text-fg">--json</span> prints one JSON document, or <span class="text-fg">{"error","hints"}</span> on failure.
+              </p>
+            </section>
+
+            <section id="config" class="doc-section">
+              <h2>Config</h2>
+              <p>
+                <span class="text-fg">examples/lnch.toml</span> is a Postgres database, a Go API, and a Vite app.
+                A service starts after each name in <span class="text-fg">depends_on</span> is healthy or running.
+                <span class="text-fg">${port}</span>, <span class="text-fg">$PORT</span>, and <span class="text-fg">${db.port}</span> expand when that process starts.
+              </p>
+              <pre>name = "shop"
+
+[share]
+service = "web"
+relay = "http://127.0.0.1:9090"
+
+[[services]]
+name = "api"
+command = "go run ./cmd/api"
+port = 8080
+depends_on = ["db"]
+health = "http://127.0.0.1:${port}/health"
+restart = "on-failure"
+env.DATABASE_URL = "postgres://127.0.0.1:${db.port}/shop?sslmode=disable"</pre>
+              <p>
+                <span class="text-fg">protocol</span> is <span class="text-fg">http</span> or <span class="text-fg">tcp</span>.
+                <span class="text-fg">restart</span> is <span class="text-fg">no</span> or <span class="text-fg">on-failure</span>, up to five times.
+                <span class="text-fg">health</span> is an HTTP URL, <span class="text-fg">tcp://127.0.0.1:${port}</span>, or <span class="text-fg">none</span>.
+                <span class="text-fg">primary</span> is what <span class="text-fg">lnch open</span> and the share URL serve.
+                <span class="text-fg">public = true</span> limits sharing to the marked services.
+              </p>
+              <p>
+                Runtime files live in <span class="text-fg">~/.lnch</span>: runs, plans, logs, and the local CA.
+                Each service receives <span class="text-fg">PORT</span>, <span class="text-fg">LNCH=1</span>, <span class="text-fg">LNCH_SERVICE</span>, and <span class="text-fg">LNCH_ROOT</span>.
+              </p>
+            </section>
+
+            <section id="commands" class="doc-section">
+              <h2>Commands</h2>
+              <dl>
+                <div><dt>lnch up</dt><dd><span class="text-fg">--dry-run</span> prints the plan. <span class="text-fg">--detach</span> backgrounds it. <span class="text-fg">--no-tui</span> streams logs. <span class="text-fg">--root</span> picks the directory.</dd></div>
+                <div><dt>lnch share</dt><dd>Launch if needed, then print the LAN or relay URL and a QR code.</dd></div>
+                <div><dt>lnch status</dt><dd>One snapshot. <span class="text-fg">--json</span> for scripts. <span class="text-fg">--watch</span> for the dashboard.</dd></div>
+                <div><dt>lnch logs</dt><dd><span class="text-fg">lnch logs web --tail 50</span>, or <span class="text-fg">--follow</span>.</dd></div>
+                <div><dt>lnch restart</dt><dd><span class="text-fg">lnch restart web</span> restarts one service.</dd></div>
+                <div><dt>lnch open</dt><dd>Opens the primary local URL. <span class="text-fg">--public</span> opens the share URL.</dd></div>
+                <div><dt>lnch down</dt><dd>Stops the tree. A second run says it is already stopped.</dd></div>
+                <div><dt>lnch detect</dt><dd>Prints the plan and exits.</dd></div>
+                <div><dt>lnch init</dt><dd>Writes <span class="text-fg">lnch.toml</span>.</dd></div>
+                <div><dt>lnch trust</dt><dd>Installs the local CA.</dd></div>
+                <div><dt>lnch mcp</dt><dd>MCP on stdio for Cursor and other agents.</dd></div>
+                <div><dt>lnch relay</dt><dd><span class="text-fg">--addr</span>, <span class="text-fg">--domain</span>, <span class="text-fg">--scheme</span>, <span class="text-fg">--register-token</span>.</dd></div>
+              </dl>
+            </section>
+
+            <section id="agents" class="doc-section">
+              <h2>Agents</h2>
+              <p>Scripts and MCP stay on the detached JSON path. They should not sit in the dashboard.</p>
+              <pre>lnch up --detach --json --no-tui
+lnch status --json
+lnch down --json</pre>
+              <pre>{"mcpServers":{"lnch":{"command":"lnch","args":["mcp"]}}}</pre>
+              <p>
+                Tools: <span class="text-fg">lnch_detect</span>, <span class="text-fg">lnch_up</span>, <span class="text-fg">lnch_down</span>, <span class="text-fg">lnch_status</span>, <span class="text-fg">lnch_logs</span>, <span class="text-fg">lnch_restart</span>, <span class="text-fg">lnch_share</span>.
+                Pass <span class="text-fg">relay</span> to <span class="text-fg">lnch_up</span> when the stack is launched.
+                <span class="text-fg">lnch_share</span> publishes a stack that is already running, using the relay from that launch.
+              </p>
+            </section>
+          </main>
+        </div>
+
+        <footer class="flex flex-wrap items-center justify-between gap-3 border-t border-line px-3 py-2 text-xs text-dim">
+          <span>0.1.0 · MIT</span>
+          <a class="text-cyan no-underline hover:text-green" href="https://github.com/lnch-sh/lnch">github</a>
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>
